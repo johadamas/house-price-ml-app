@@ -1,370 +1,273 @@
 # End-to-End House Price Prediction ML App with Streamlit
 
+## Table of Contents
+1. [Introduction](#introduction)
+2. [Prerequisites](#prerequisites)
+3. [Technical Details](#technical-details)
+4. [Conclusion](#conclusion)
+5. [Future Enhancements](#future-enhancements)
+
 ## Introduction
-This project aims to create a Machine Learning App that can predict housing prices in Indonesia, specifically in Jakarta. The data was collected from the 99.co website, which provides excellent information such as the number of bedrooms and bathrooms, as well as the land and floor area of the listed properties. Streamlit is used to develop the final ML App, providing an interactive and user-friendly interface.
+### Problem Statement
+The real estate market in Jakarta is dynamic and complex, making it challenging for buyers and sellers to determine accurate property prices. Location, property size, and amenities significantly influence prices, but their relationships are often non-linear and challenging to quantify without advanced tools
 
-## Architecture
+### Project Objectives
+This project aims to develop a Streamlit-based Machine Learning (ML) application to predict housing prices in Jakarta using data from 99.co. The model leverages key property features such as:
 
-![Pipeline Flow](/images/project_architecture.png "Project Architecture")
+- Number of bedrooms and bathrooms
+- Land area and floor area
+- Location (district and city)
 
-The goal of this project is to leverage data-driven techniques to help users estimate the value of properties based on key features. By using machine learning models, we can provide accurate predictions and valuable insights into the real estate market.
+The app helps buyers and sellers make informed decisions by providing accurate price estimates and market insights
 
-## Project Flow
+## Prerequisites
+### Environment Setup:
+- Python 3.8 or above
+- Libraries: pandas, numpy, scikit-learn, matplotlib, seaborn, xgboost, Streamlit.
 
-### A. Data Scraping
-1. Install the Instant Data Scraper Extension for Chrome or any browser
-2. Open the targeted web for data scraping
-3. Launch the Scraper Extension and locate the next button of the website
-4. Once the 'Next' button is located, the Scraping can be start by clicking the 'Start' button
-5. Make sure to set the minimum delay above 2 seconds in order to prevent the Scraper to crash
+### Required Tools:
+- Instant Data Scraper (browser extension)
+- Jupyter Notebook (optional) for running the `.ipynb` notebook
 
-    ![Data Scraping](/images/scraping.gif "Scraping Proccess")
+## Technical Details
+### Architecture:
 
-### B. Data Preparation
-1. Load All Raw Data
-    - The initial data is loaded from three separate CSV files into DataFrames
+![](/images/project_architecture.png "")
 
-        ```python
-        - part_0 = pd.read_csv('/content/99.csv')
-        - part_1 = pd.read_csv('/content/99 (1).csv')
-        - part_2 = pd.read_csv('/content/99 (2).csv')
-        ```
+### Project Flow:
+1. **Data Collection**
+    - The property listing data is scraped from **99.co** using the **Instant Data Scraper** browser extension
 
-2. Drop Unnecessary Columns
-    - Columns that are not needed for the analysis are removed from each DataFrame to simplify the dataset
+        ![](/images/scraping.gif "")
 
-        ```python
-        # Drop unnecessary columns
-        part_1.drop(
-            columns=['cardSecondary__media src',
-                    'cardSecondary__info-wrapper_detail-basic-content href',
-                    'cardSecondary__info-agent href',
-                    'cardSecondary__media-count',
-                    'agent-detail_name',
-                    'agent-detail_name 2',
-                    'text',
-                    'text 2',
-                    'Svg href 5',
-                    'avatar src',
-                    'price'
-                    ], axis = 1, inplace = True)
-        ```
+    - The data includes property listings with **key features** such as:
+        - Number of bedrooms and bathrooms
+        - Land and floor area
+        - Location (district and city)
+        - Price
 
-3. Rename Columns
-    - The columns are renamed to more meaningful names for ease of understanding and usability
+2. **Data Preparation**
+    - Transformations:
+        - Drop unnecessary columns
 
-        ```python
-        # Rename columns
-        part_1.rename(
-            columns={'updated-date 2': 'date',
-                    'price__tag': 'price',
-                    'cardSecondary__info-wrapper_detail-basic-content': 'description',
-                    'cardSecondary__info-wrapper_detail-basic-content 2': 'location',
-                    'left': 'bedrooms',
-                    'left 2': 'bathrooms',
-                    'right': 'land',
-                    'right 3': 'floor'}, inplace=True)
-        ```
+            ```python
+            # Drop unnecessary columns
+            part_1.drop(
+                columns=['cardSecondary__media src',
+                        'cardSecondary__info-wrapper_detail-basic-content href',
+                        'cardSecondary__info-agent href',
+                        'cardSecondary__media-count',
+                        'agent-detail_name',
+                        'agent-detail_name 2',
+                        'text',
+                        'text 2',
+                        'Svg href 5',
+                        'avatar src',
+                        'price'
+                        ], axis = 1, inplace = True)
+            ```
+        - Renamed columns
+            ```python
+            # Rename columns
+            part_1.rename(
+                columns={'updated-date 2': 'date',
+                        'price__tag': 'price',
+                        'cardSecondary__info-wrapper_detail-basic-content': 'description',
+                        'cardSecondary__info-wrapper_detail-basic-content 2': 'location',
+                        'left': 'bedrooms',
+                        'left 2': 'bathrooms',
+                        'right': 'land',
+                        'right 3': 'floor'}, inplace=True)
+            ```
 
-4. Extract the Last Two Segments from Location
-    - The location column is transformed to retain only the last two segments, providing consistent and relevant location information
+        - Combine DataFrames
+            ```python
+            # List all the file
+            house_data = [part_0, part_1, part_2]
 
-        ```python
-        # Extract the last two segments from location
-        part_1['location'] = part_1['location'].apply(lambda x: ', '.join(x.split(', ')[-2:]))
-        ```
+            # Merge all the DataFrames into one
+            merged_data = pd.concat(house_data, axis=0, ignore_index=True)
+            ```
 
-5. Combine DataFrames
-    - All the cleaned DataFrames are combined into a single list
+        - Split location column
+            ```python
+            # Split the 'location' column into 'district' and 'city'
+            df[['district', 'city']] = df['location'].str.split(', ', expand=True)
 
-        ```python
-        # List all the file
-        house_data = [part_0, part_1, part_2]
-        ```
+            df.drop(columns=['location'], axis = 1, inplace = True)
+            ```
+        - Handle `land` and `floor` columns
+            ```python
+            # Convert to string, remove non-numeric characters, handle NaN, and convert to int
+            df['land'] = df['land'].astype(str).str.replace(r'\D', '', regex=True)
+            df['land'] = pd.to_numeric(df['land'], errors='coerce').fillna(0).astype(int)
 
-6. Merge All DataFrames into One
-    - The individual DataFrames in the list are concatenated into a single DataFrame
+            df['floor'] = df['floor'].astype(str).str.replace(r'\D', '', regex=True)
+            df['floor'] = pd.to_numeric(df['floor'], errors='coerce').fillna(0).astype(int)
+            ```
 
-        ```python
-        # Merge all the DataFrames into one
-        merged_data = pd.concat(house_data, axis=0, ignore_index=True)
-        ```
+        - Convert currency data types
+            ```python
+            # Function to convert the currency values
+            def convert_currency(value):
+                # Remove 'Rp' prefix
+                value = value.replace('Rp', '').strip()
 
-7. Save the Merged Data into One CSV File
-    - The merged DataFrame is saved into a CSV file for further analysis
+                # Define magnitude multipliers
+                multipliers = {
+                    'Juta': 1e6,
+                    'Miliar': 1e9
+                }
 
-        ```python
-        merged_data.to_csv('house_data.csv', header = True)
-        ```
+                # Extract the number and magnitude
+                match = re.match(r'([\d,.]+)\s*(Juta|Miliar)?', value)
+                if match:
+                    num_str, magnitude = match.groups()
+                    # Replace comma with dot for decimal points
+                    num_str = num_str.replace(',', '.')
+                    number = float(num_str)
+                    if magnitude in multipliers:
+                        number *= multipliers[magnitude]
+                    return number
+                else:
+                    raise ValueError(f"Unrecognized format: {value}")
 
-### C. Data Processing
-1. Data Transformation
-    - Load the Dataset:
-        - The dataset is loaded from a CSV file, and unnecessary columns such as Unnamed: 0 are dropped
+            # Apply conversion function
+            df['price'] = df['price'].apply(convert_currency)
+            ```
 
-    - Split Columns:
-        - The location column is split into district and city to make these features usable for analysis
+    - Data Cleaning:
+        - Handle missing values
 
-        ```python
-        # Split the 'location' column into 'district' and 'city'
-        df[['district', 'city']] = df['location'].str.split(', ', expand=True)
-
-        df.drop(columns=['location'], axis = 1, inplace = True)
-        ```
-
-    - Handle Missing Values:
-        - Null values in critical columns such as city are dropped to ensure data integrity
-
-        ```python
-        # Convert to string, remove non-numeric characters, handle NaN, and convert to int
-        df['land'] = df['land'].astype(str).str.replace(r'\D', '', regex=True)
-        df['land'] = pd.to_numeric(df['land'], errors='coerce').fillna(0).astype(int)
-
-        df['floor'] = df['floor'].astype(str).str.replace(r'\D', '', regex=True)
-        df['floor'] = pd.to_numeric(df['floor'], errors='coerce').fillna(0).astype(int)
-
-        # Drop any null values in the 'city' column
-        df.dropna(subset = 'city', inplace = True)
-        ```
-
-    - Convert Data Types:
-        - Columns like land are cleaned to remove non-numeric characters and converted into numerical types
-
-        ```python
-        # Function to convert the currency values
-        def convert_currency(value):
-            # Remove 'Rp' prefix
-            value = value.replace('Rp', '').strip()
-
-            # Define magnitude multipliers
-            multipliers = {
-                'Juta': 1e6,
-                'Miliar': 1e9
-            }
-
-            # Extract the number and magnitude
-            match = re.match(r'([\d,.]+)\s*(Juta|Miliar)?', value)
-            if match:
-                num_str, magnitude = match.groups()
-                # Replace comma with dot for decimal points
-                num_str = num_str.replace(',', '.')
-                number = float(num_str)
-                if magnitude in multipliers:
-                    number *= multipliers[magnitude]
-                return number
-            else:
-                raise ValueError(f"Unrecognized format: {value}")
-        ```
-
-    - Currency Conversion:
-        - A function is applied to convert currency values into a consistent numerical format for analysis
-
-        ```python
-        # Apply conversion function
-        df['price'] = df['price'].apply(convert_currency)
-        ```
-
-2. Data Analysis
+3. **Data Analysis**
     - Univariate Analysis:
-        - Visualized categorical features like district and city using bar plots to identify the distribution of house listings
+        - Visualized categorical features (`district` and `city`) using bar charts
 
-            ![](/images/barchart.png "")
+            ![](/images/barchart.png "Count of City, ordered by the largest count")
 
-            ![](/images/barchart2.png "")
+            ![](/images/barchart2.png "Count of District, ordered by the largest count")
 
-            *Note: The Barchart above shows that 'Jakarta Utara' has the most house listing according to the website, specifically in the 'Kelapa Gading' district*
+            *`Insight`: **Jakarta Utara** has the highest number of listings, especially in **Kelapa Gading***
 
-        - Summarized numerical features like price, bedrooms, and bathrooms to understand the range and central tendencies
+        - Summarized numerical features (`price`, `bedrooms`, `bathrooms`) to analyze their range and distribution
 
     - Bivariate Analysis
-        - Scatterplots:
-            - Explored relationships between features like bedrooms vs. price and land vs. price
+        - Explored feature relationships using scatterplots:
 
-            ![](/images/scatterplot1.png "")
+            ![](/images/scatterplot1.png "Price vs Bedrooms")
 
-            ![](/images/scatterplot2.png "")
+            ![](/images/scatterplot2.png "Price vs Bathrooms")
 
-            ![](/images/scatterplot3.png "")
+            ![](/images/scatterplot3.png "Price vs Floors")
 
-            ![](/images/scatterplot4.png "")
+            ![](/images/scatterplot4.png "Price vs Land")
 
-           *Note: The scatterplot above shows an extremely high and extremely low data point relative to the nearest data point and the rest of the neighboring co-existing values in many of the numerical columns*
+           *`Insight`: Scatterplots reveal extreme outliers, later handled in preprocessing*
 
-        - Correlation Analysis:
-            - Computed correlation coefficients to identify relationships among features
+        - Conducted correlation analysis:
 
-            ![](/images/heatmap1.png "")
+            ![](/images/heatmap1.png "Correlation Heatmap between Price, Floor, Land")         
 
-           *Note: The heatmap above indicates a weak positive relationship between the price and land size and also floors and price. Larger land sizes or floors are associated with higher prices, but this factor alone does not strongly influence the price*           
+            ![](/images/heatmap2.png "Correlation Heatmap between Price, Bathrooms, Bedrooms")
 
-            ![](/images/heatmap2.png "")
+           *`Insight`: Land size and floors have a weak positive correlation with price, while bedrooms and bathrooms have minimal impact*            
 
-           *Note: The heatmap above indicates a very weak positive relationship between the price and number of bedrooms and bathrooms and. This means that the number of bedrooms and bathrooms has a minimal impact on the price*            
+4. **Outlier Handling**
+    - Identified outliers from Data Analysis and removed them using Z-scores and IQR:
 
-3. Outlier Handling
-    - Floor and Price Outliers:
-        - Removed extreme values in floor and price that were identified as statistical outliers
+        - **Z-Scores**: We calculated the Z-scores for the price column to identify outliers. Data points with absolute Z-scores greater than 3 were considered outliers and removed
 
-        ```python
-        # Drop floor > 1500, since the gap is getting wider gradually
-        df = df[df['floor'] <= 1500]
+            ```python
+            from scipy import stats
+            import numpy as np
 
-        # Drop outlier in the 'price' columns
-        df = df[df['price'] <= 50000000000]
-        ```
+            df = df[(np.abs(stats.zscore(df['price'])) < 3)]
+            ```
 
-    - Land Outliers:
-        - Applied similar methods to handle extreme values in the land column
+        - **Interquartile Range (IQR)**: We calculated the first quartile (Q1) and the third quartile (Q3) for the price column and determined the IQR. Outliers were identified as data points falling below Q1 - 1.5 * IQR or above Q3 + 1.5 * IQR
 
-        ```python
-        # Drop 'land' above 1500
-        df = df[df['land'] <= 1500]
-        ```
+            ```python
+            # Calculate Q1, Q3, and IQR
+            Q1 = df['price'].quantile(0.25)
+            Q3 = df['price'].quantile(0.75)
+            IQR = Q3 - Q1
 
-    - Statistical Techniques:
-        - Used Z-scores and interquartile ranges (IQR) to detect and handle outliers
+            # Define lower and upper bounds for non-outliers
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
 
-        ```python
-        # Calculate Q1, Q3, and IQR
-        Q1 = df['price'].quantile(0.25)
-        Q3 = df['price'].quantile(0.75)
-        IQR = Q3 - Q1
+            # Filter the DataFrame to remove outliers
+            df_filtered = df[(df['price'] >= lower_bound) & (df['price'] <= upper_bound)]
 
-        # Define lower and upper bounds for non-outliers
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
+            # Optional: To confirm the outliers are removed
+            df_filtered.shape  # This shows the new size of the DataFrame
+            ```
 
-        # Filter the DataFrame to remove outliers
-        df_filtered = df[(df['price'] >= lower_bound) & (df['price'] <= upper_bound)]
-        ```
-        *Note: Please check the notebook for detailed Outlier Handling*        
+    - **Impact of Outlier Removal**:
+        - Correlation between price and land size **increased to 0.737**
 
-    - Handling Result:
-        - After handling some of the outlier, we can see an increase in correlation between the price and the floor as well as land
+        - Correlation between price and floors **increased to 0.722**
 
             ![](/images/scatterplot5.png "")
 
             ![](/images/heatmap3.png "")
 
-            *Note: A correlation of 0.737 indicates a strong positive relationship. This means that as the size of the land increases, the price tends to increase significantly. Also, a correlation of 0.722 indicates a strong positive relationship. This suggests that properties with more floors tend to have higher prices* 
+            *`Insight`: Larger land sizes and more floors strongly correlate with higher property prices*
 
-### D. Model Building
-1. Feature Preprocessing
-    - Define the target variable
-        - Define the feature variables (X) and the target variable (y)
+5. **Model Building**
+    - One-hot encoded categorical features (`district`, `city`) and numerical features (`Bedrooms`, `Bathrooms`, `Floor`, `Land`)
 
-        ```python
-        X = df.drop(columns=['price'])
-        y = df['price']
-        ```
-    - Numerical and Categorical features:
-        - Identify numerical and categorical features available in the dataset
+    - Trained a **Gradient Boosting Regressor** (outperforming Linear Regression)
 
-        ```python
-        numeric_features = ['bedrooms', 'bathrooms', 'floor', 'land']
-        categorical_features = ['district', 'city']
-        ```
-    - Imputation: 
-        - Simple Imputer was utilized to handle missing values in both numerical and categorical data by imputing with the mean for numerical features and the most frequent value for categorical features
+    - Used 80% training / 20% test split
 
-    - Scaling: 
-        - Standard Scaler was employed for standardizing numerical features (`bedrooms`, `bathrooms`, `floor`, `land`) by removing the mean and scaling to unit variance, ensuring that the model treats each feature equally
+    - Evaluated using **R²** score and **Mean Squared Error (MSE)**
 
-    - One-Hot Encoding: 
-        - Applied to convert categorical variables (`district`, `city`) into a binary format, allowing them to be included in the model
+6. **Model Performance**
+    - Achieved an **R² score of 74.33%**, indicating strong predictive performance
 
-        ```python
-        # Define the preprocessing steps for numerical features
-        numeric_transformer = Pipeline(steps=[('imputer', SimpleImputer(strategy='mean')), ('scaler', StandardScaler())])
+7. **ML App Building**
+    - Integrated the trained model into a Streamlit app for an interactive user experience
 
-        # Define the preprocessing steps for categorical features
-        categorical_transformer = Pipeline(steps=[('imputer', SimpleImputer(strategy='most_frequent')),('onehot', OneHotEncoder(handle_unknown='ignore'))])
-
-        # Combine preprocessing steps
-        preprocessor = ColumnTransformer(
-        transformers=[('num', numeric_transformer, numeric_features), ('cat', categorical_transformer, categorical_features)])
-        ```
-2. Model Selection
-    - Gradient Boosting Regressor
-        - The Gradient Boosting Regressor is used for this project due to its superior performance, achieving a higher R² score compared to the Linear Regression model
-
-        ```python
-        # Create the pipeline with preprocessing and the model
-        model = Pipeline(steps=[('preprocessor', preprocessor),
-                                ('regressor', GradientBoostingRegressor(random_state=42))])
-        ```
-3. Model Training and Evaluation
-    - Data Split
-        - The processed dataset is split into training and testing sets
-
-        ```python
-        # Split the data into training and testing sets
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        ```
-    - Training
-        - The Gradient Boosting Regressor is trained on the training set, and its performance is evaluated using metrics such as R² and Mean Squared Error (MSE)
-
-        ```python
-        # Train the model
-        model.fit(X_train, y_train)
-        ```
-    - Result
-        - The Gradient Boosting Regressor was able to achieve the R2 score of 74.326 which is acceptable for this project
-
-        ```python
-        y_pred = model.predict(X_test)
-
-        # Evaluate the model
-        r2 = r2_score(y_test, y_pred)
-        print(f'R2 score: {r2*100}')
-
-        R2 score: 74.32682219412816
-        ```
-### E. Machine Learning App
-1. Saving the ML Model
-    - The model then saved as a pickle.dump(), to makes it easy to integrate with applications such Streamlit
-
-        ```python
-        pk.dump(model, open('house_model.pkl', 'wb'))
-        ```
-
-2. Stremlit Integration
-    - Streamlit is later used to develop the final ML App, providing an interactive and user-friendly interface
+    - Users input property details (e.g., bedrooms, bathrooms, land area) and receive instant price predictions
 
         ![](/images/ml_app.gif "")
 
-## Notes
-1. **Assumptions**:
-    - The scraped data is assumed to represent accurate and up-to-date real estate listings
+---
 
-    - All null or missing values in critical fields like city, price, or land have been handled to ensure data integrity
+### Limitations:
+1. **Dataset Bias:**
+    - The dataset may contain biases from its source, affecting generalizability
 
-2. **Limitations**:
-    - Dataset Bias:
-        - The dataset may contain inherent biases from the original source website, potentially affecting the generalizability of insights
+2. **Outlier Handling:**
+    - Removing outliers may have excluded legitimate but unusual data points, impacting accuracy
 
-    - Outlier Handling:
-        - Outlier removal and imputation methods could have removed some legitimate but unusual data points, impacting the accuracy of the model
+3. **Missing Features:**
+    - Some important factors, like furnishing status, were initially available but had a high percentage of missing values. To maintain data quality and model reliability, they were excluded, which may limit accuracy
 
-    - Missing Features:
-        - Key factors such as whether the property is fully furnished, semi-furnished, or non-furnished are not included in the dataset due to data availability. These variables can significantly influence house prices but are not accounted for in the current model
-        
-    - Location-Specific Impact:
-        - Variables like city and district have been used in the model, but the analysis may not fully capture their heavy influence on prices in prestigious areas such as Cilandak or Menteng. These areas may demand premium prices due to reputation, amenities, or exclusivity, which the model does not explicitly consider
+4. **Location-Specific Impact:**
+    - The model considers city and district but may not fully capture premium pricing in prestigious areas like Cilandak or Menteng.
 
-3. **Model Performance**:
-    - The Gradient Boosting Regressor achieved a higher R² score, which validates its selection over simpler models like Linear Regression
-
-## Prerequisites
-1. **Environment Setup**:
-    - Python 3.8 or above
-
-    - Libraries: pandas, numpy, scikit-learn, matplotlib, seaborn, xgboost
-
-2. **Required Tools**:
-    - Instant Data Scraper: A browser extension for web scraping
-
-    - Jupyter Notebook (optional): For running the .ipynb notebook
+5. **Model Accuracy in Real Estate Pricing:**
+    - The R² score of 74.33% is strong but may be affected by market trends, economic conditions, and buyer sentiment, which are not included
 
 ## Conclusion
-This project demonstrates the implementation of an end-to-end machine learning application for predicting housing prices in Jakarta, Indonesia. By leveraging web scraping, data cleaning, and machine learning techniques, we built a model to provide price predictions. The final application, developed with Streamlit, offers an interactive interface for users to input property features and obtain price estimates
+This project demonstrates the implementation of an end-to-end machine learning application by leveraging web scraping, data cleaning, and machine learning techniques for predicting housing prices in Jakarta.
+
+## Future Enhancements
+### Things to do:
+
+1. **Incorporate Additional Features**
+    - Include features like property furnishing status (fully furnished, semi-furnished, etc.) to improve model accuracy
+
+2. **Expand to Other Cities**
+    - Extend the model to predict housing prices in other major cities in Indonesia
+
+3. **Improve Outlier Handling**
+    - Develop more robust methods for outlier detection and handling
+
+4. **Enhance Model Performance**
+    - Compare performance with advanced models like XGBoost to improve prediction accuracy
+
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
