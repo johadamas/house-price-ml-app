@@ -3,38 +3,40 @@
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Prerequisites](#prerequisites)
-3. [Technical Details](#technical-details)
-4. [Conclusion](#conclusion)
-5. [Future Enhancements](#future-enhancements)
+3. [Project Flow](#project-flow)
+4. [Limitations](#limitations)
+5. [Conclusion](#conclusion)
+6. [Future Enhancements](#future-enhancements)
 
 ## Introduction
-### Problem Statement
-The real estate market in Jakarta is dynamic and complex, making it challenging for buyers and sellers to determine accurate property prices. Location, property size, and amenities significantly influence prices, but their relationships are often non-linear and challenging to quantify without advanced tools
+1. **Problem Statement**
 
-### Project Objectives
-This project aims to develop a Streamlit-based Machine Learning (ML) application to predict housing prices in Jakarta using data from 99.co. The model leverages key property features such as:
+    The real estate market in Jakarta is dynamic and complex, making it challenging for buyers and sellers to determine accurate property prices. Location, property size, and amenities significantly influence prices, but their relationships are often non-linear and challenging to quantify without advanced tools
 
-- Number of bedrooms and bathrooms
-- Land area and floor area
-- Location (district and city)
+2. **Project Objectives**
 
-The app helps buyers and sellers make informed decisions by providing accurate price estimates and market insights
+    This project aims to develop a **Streamlit-based Machine Learning (ML) application** to predict housing prices in Jakarta using data from 99.co. The architecture and key components are as follows:
+
+    ![](/images/project_architecture.png "")
+
+    - `Data Collection`: Instant Data Scraper to extract housing data from 99.co.
+
+    - `Model Development`: Process data and train an ML model using Jupyter Notebook.
+    
+    - `Interactive App`: Deploy the trained model in a user-friendly Streamlit app for real-time price predictions.
+
+    By leveraging machine learning, this app provides buyers and sellers with accurate price estimates and market insights, enabling informed decision-making
 
 ## Prerequisites
-### Environment Setup:
-- Python 3.8 or above
-- Libraries: pandas, numpy, scikit-learn, matplotlib, seaborn, xgboost, Streamlit.
+1. **Environment Setup**:
+    - Python 3.8 or above
+    - Libraries: pandas, numpy, scikit-learn, matplotlib, seaborn, xgboost, Streamlit.
 
-### Required Tools:
-- Instant Data Scraper (browser extension)
-- Jupyter Notebook (optional) for running the `.ipynb` notebook
+2. **Required Tools**:
+    - Instant Data Scraper (browser extension)
+    - Jupyter Notebook (optional) for running the `.ipynb` notebook
 
-## Technical Details
-### Architecture:
-
-![](/images/project_architecture.png "")
-
-### Project Flow:
+## Project Flow:
 1. **Data Collection**
     - The property listing data is scraped from **99.co** using the **Instant Data Scraper** browser extension
 
@@ -235,7 +237,7 @@ The app helps buyers and sellers make informed decisions by providing accurate p
 
 ---
 
-### Limitations:
+## Limitations:
 1. **Dataset Bias:**
     - The dataset may contain biases from its source, affecting generalizability
 
@@ -255,8 +257,6 @@ The app helps buyers and sellers make informed decisions by providing accurate p
 This project demonstrates the implementation of an end-to-end machine learning application by leveraging web scraping, data cleaning, and machine learning techniques for predicting housing prices in Jakarta.
 
 ## Future Enhancements
-### Things to do:
-
 1. **Incorporate Additional Features**
     - Include features like property furnishing status (fully furnished, semi-furnished, etc.) to improve model accuracy
 
