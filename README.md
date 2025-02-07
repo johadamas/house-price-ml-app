@@ -36,7 +36,7 @@
     - Instant Data Scraper (browser extension)
     - Jupyter Notebook (optional) for running the `.ipynb` notebook
 
-## Project Flow:
+## Project Flow
 1. **Data Collection**
     - The property listing data is scraped from **99.co** using the **Instant Data Scraper** browser extension
 
@@ -237,7 +237,7 @@
 
 ---
 
-## Limitations:
+## Limitations
 1. **Dataset Bias:**
     - The dataset may contain biases from its source, affecting generalizability
 
